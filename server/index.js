@@ -3,7 +3,7 @@ const {toHex} = require("ethereum-cryptography/utils")
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const port = 3042;
+const port = process.env.PORT || 3042;
 
 app.use(cors());
 app.use(express.json());
