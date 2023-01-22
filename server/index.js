@@ -1,3 +1,5 @@
+const {verifyTx, hashMessage, getPublicKeyFromSignature, getAddressFromPublicKey} = require("./scripts/Cryptography")
+const {toHex} = require("ethereum-cryptography/utils")
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -7,9 +9,9 @@ app.use(cors());
 app.use(express.json());
 
 const balances = {
-  "0x1": 100,
-  "0x2": 50,
-  "0x3": 75,
+  "ae98537c67eaa7216388e6813c765c791e070cc2": 150,
+  "0c0e5004a12e66fc7818b3537d0a74b5fee089f5": 100,
+  "c9e4ef01088b55bb53c0a4a9d7352c0e9eb08edd": 75,
 };
 
 app.get("/balance/:address", (req, res) => {
@@ -19,17 +21,28 @@ app.get("/balance/:address", (req, res) => {
 });
 
 app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
-
-  setInitialBalance(sender);
-  setInitialBalance(recipient);
-
-  if (balances[sender] < amount) {
-    res.status(400).send({ message: "Not enough funds!" });
-  } else {
-    balances[sender] -= amount;
-    balances[recipient] += amount;
-    res.send({ balance: balances[sender] });
+  let pubKey="", sender="";
+  const { signature, txHash, recipient, amount, recoveryBit } = req.body;
+  try{
+    console.log(req.body)
+    pubKey = (getPublicKeyFromSignature(txHash,signature,recoveryBit))
+    console.log("PUBLIC KEY:",toHex(pubKey))
+  }catch(err){
+    console.log("ERROR Getting Public key:",err)
+  }
+  
+  try{
+    sender = (getAddressFromPublicKey(pubKey))
+    console.log("ADDRESS FROM SENDER:", sender)
+    if (balances[sender] < amount) {
+      res.status(400).send({ message: "Not enough funds!" });
+    } else {
+      balances[sender] -= amount;
+      balances[recipient] += amount;
+      res.send({ balance: balances[sender] });
+    }
+  }catch(error){
+    console.log("ERROR IN SERVER SENDING TX:",error)
   }
 });
 
